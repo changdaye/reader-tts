@@ -1,0 +1,48 @@
+#!/usr/bin/env node
+
+const { program } = require('commander');
+
+// Import our main module
+const { readMdFileAloud } = require('../src/index.js');
+
+program
+  .name('reader-tts')
+  .description('CLI tool to read Markdown files aloud using TTS')
+  .version('1.0.0')
+  .argument('[file]', 'path to the markdown file to read (required unless using --install-right-click)')
+  .option('-s, --speed <speed>', 'reading speed (default: 1.0, increase if 2.0 speed feels too slow)', '1.0')
+  .option('-r, --rate <rate>', 'alternative speed option', '1.0')
+  .option('-v, --voice <voice>', 'voice to use (system default if not specified)', '')
+  .option('--volume <volume>', 'volume level (0.0 - 1.0) (default: 1.0)', '1.0')
+  .option('--quiet', 'suppress status messages')
+  .option('--install-right-click', 'install right-click context menu (macOS)')
+  .action(async (filePath, options) => {
+    // Handle right click installation
+    if (options.installRightClick) {
+      await readMdFileAloud(null, { 
+        installRightClick: true,
+        quiet: options.quiet 
+      });
+      return;
+    }
+    
+    // Verify a file path was provided for non-install operations
+    if (!filePath) {
+      console.error('Error: Please provide a markdown file path');
+      program.help();
+      return;
+    }
+    
+    // Determine the speed - prefer -s/--speed, fallback to -r/--rate if different from default
+    const speed = options.speed !== '1.0' ? parseFloat(options.speed) : parseFloat(options.rate);
+    
+    // Call the main function with resolved params
+    await readMdFileAloud(filePath, {
+      speed: speed,
+      voice: options.voice,
+      volume: parseFloat(options.volume),
+      quiet: options.quiet
+    });
+  });
+
+program.parse();
